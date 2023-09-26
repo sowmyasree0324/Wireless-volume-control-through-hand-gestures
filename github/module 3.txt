@@ -1,0 +1,54 @@
+
+import numpy as ns
+import cv2
+import time
+import HandTrackingModulea as htp
+from comtypes import CLSCTX_ALL
+from ctypes import cast, POINTER
+import math
+from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+widthCam, heightCam = 650, 490
+capt = cv2.VideoCapture(0)
+capt.set(3, widthCam)
+capt.set(4, heightCam)
+prevtime = 0
+detector = htp.handDetector(detectionCon=0.7)
+deviceson = AudioUtilities.GetSpeakers()
+interfaces_dev = deviceson.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+volume = cast(interfaces_dev, POINTER(IAudioEndpointVolume))
+volume.GetMute()
+volRange = volume.GetVolumeRange()
+minVol = volRange[0]
+maxVol = volRange[1]
+vol = 0
+volBar = 400
+volPer = 0
+while True:
+ success, img = capt.read()
+ img = detector.findHands(img)
+ lmsList = detector.findPosition(img, draw=False)
+ if len(lmsList) != 0:
+ a1, b1 = lmsList[4][1], lmsList[4][2]
+ a2, b2 = lmsList[8][1], lmsList[8][2]
+ cx, cy = (a1 + a2) // 2, (b1 + b2) // 2
+ cv2.circle(img, (a1, b1), 15, (254, 0, 254), cv2.FILLED)
+ cv2.circle(img, (a2, b2), 15, (254, 0, 254), cv2.FILLED)
+ cv2.line(img, (a1, b1), (a2, b2), (254, 0, 254), 3)
+ cv2.circle(img, (cx, cy), 15, (254, 0, 254), cv2.FILLED)
+ lengthc = math.hypot(a2 - a1, b2 - b1)
+ vol = ns.interp(lengthc, [50, 300], [minVol, maxVol])
+ volBar = ns.interp(lengthc, [50, 300], [400, 150])
+ volPer = ns.interp(lengthc, [50, 300], [0, 100])
+ print(int(lengthc), vol)
+ volume.SetMasterVolumeLevel(vol, None)
+ if lengthc < 50:
+ cv2.circle(img, (cx, cy), 15, (0, 254, 0), cv2.FILLED)
+ cv2.rectangle(img, (50, 150), (85, 400), (254, 0, 0), 2)
+ cv2.rectangle(img, (50, int(volBar)), (85, 401), (254, 0, 0), cv2.FILLED)
+ cv2.putText(img, f'{int(volPer)} %', (40, 451), cv2.FONT_HERSHEY_COMPLEX, 1, (254, 0, 0), 3)
+ currtime = time.time()
+ frps = 1 / (currtime - prevtime)
+ prevtime = currtime
+ cv2.putText(img, f'FPS: {int(frps)}', (40, 50), cv2.FONT_HERSHEY_COMPLEX,1, (255, 0, 0), 3)
+ cv2.imshow("Img", img)
+ cv2.waitKey(1)

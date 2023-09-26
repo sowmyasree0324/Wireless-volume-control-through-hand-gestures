@@ -1,0 +1,199 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Music display</title>
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fontawesome/5.13.0/css/all.min.css">
+ <style>
+ body {
+ font-family: Joker;
+ }
+ .player {
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ justify-content: center;
+ height: 100vh;
+ }
+ .details {
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ margin-bottom: 30px;
+ }
+ .curr-playing {
+ font-size: 1.2rem;
+ margin-bottom: 10px;
+ }
+ .art {
+ width: 250px;
+ height: 250px;
+ background-position: center;
+ background-repeat: no-repeat;
+ background-size: cover;
+ border-radius: 50%;
+ }
+ .song-name,
+ .song-artist {
+ font-size: 1.2rem;
+ margin-top: 10px;
+ }
+ .buttons {
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ margin-bottom: 30px;
+ }
+ .buttons>div {
+ margin: 0 10px;
+ cursor: pointer;
+ opacity: 0.8;
+ transition: opacity 0.2s;
+ }
+ .buttons>div:hover {
+ opacity: 1;
+ }
+ .slider_container {
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ margin-bottom: 30px;
+ }
+ .currtime,
+ .total-duration {
+ padding: 10px;
+ }
+ </style>
+</head>
+<body>
+ <div class="player">
+ <div class="details">
+ <div class="curr-playing">PLAYING 1 of 3</div>
+ <div class="art"></div>
+ <div class="song-name">Song name</div>
+ <div class="song-artist">Artist</div>
+ </div>
+ <div class="buttons">
+ <div class="previtrack" onclick="ct('prev')"><i class="fa fa-step-backward fa-2x"></i></div>
+ <div class="playpausetrack" onclick="tp()"><i class="fa fa-play-circle fa-5x"></i></div>
+ <div class="nxttrack" onclick="ct('next')"><i class="fa fa-step-forward fa-2x"></i></div>
+ </div>
+ <div class="slider_container">
+ <div class="currtime">00:00</div>
+ <input type="range" min="1" max="100" value="0" class="seek_slider" onchange="st()">
+ <div class="ttlduration">00:00</div>
+ </div>
+ </div>
+ <script>
+ let a = document.querySelector(".curr-playing");
+ let b = document.querySelector(".art");
+ let c = document.querySelector(".song-name");
+ let d = document.querySelector(".song-artist");
+ let e = document.querySelector(".playpausetrack");
+ let f = document.querySelector(".nxttrack");
+ let g = document.querySelector(".previtrack");
+ let h = document.querySelector(".seek_slider");
+ let i = document.querySelector(".currtime");
+ let j = document.querySelector(".ttlduration");
+ let k = 0;
+ let l = false;
+ let m;
+ let n = document.createElement('audio');
+ let o = [{
+ name: "Song-1",
+ artist: "james",
+ image: "https://img.freepik.com/free-photo/book-composition-with-open-book_23-
+2147690555.jpg?auto=compress&cs=tinysrgb&dpr=3&h=250&w=250",
+ path: "https://files.freemusicarchive.org/storage-freemusicarchiveorg/music/WFMU/Broke_For_Free/Directionless_EP/Broke_For_Free_-_01_-_Night_Owl.mp3"
+ },
+ {
+ name: "Song-2",
+ artist: "Philip",
+ image: "https://www.almanac.com/sites/default/files/styles/or/public/image_nodes/sunflower1627193_1920.jpg?auto=compress&cs=tinysrgb&dpr=3&h=250&w=250",
+ path: "https://files.freemusicarchive.org/storage-freemusicarchiveorg/music/no_curator/Tours/Enthusiast/Tours_-_01_-_Enthusiast.mp3"
+ },
+ {
+ name: "Song-3",
+ artist: "james",
+ image: "https://img.freepik.com/free-vector/musical-notes-frame-with-text-space_1017-
+32857.jpg?auto=compress&cs=tinysrgb&dpr=3&h=250&w=250",
+ path: "https://files.freemusicarchive.org/storage-freemusicarchiveorg/music/ccCommunity/Chad_Crouch/Arps/Chad_Crouch_-_Shipping_Lanes.mp3",
+ },
+ ];
+ function aq(n) {
+ clearInterval(m);
+ ar();
+ n.src = o[k].path;
+ n.load();
+ b.style.backgroundImage = "url(" + o[k].image + ")";
+ c.textContent = o[k].name;
+ d.textContent = o[k].artist;
+ a.textContent = "PLAYING " + (k + 1) + " OF " + o.length;
+ m = setInterval(as, 1000);
+ n.addEventListener("ended", ct.bind(null, 'next'));
+ at();
+ }
+ function ar() {
+ i.textContent = "00:00";
+ j.textContent = "00:00";
+ h.value = 0;
+ }
+ function tp() {
+ if (!l)
+ au();
+ else
+ av();
+ }
+ function au() {
+ n.play();
+ l = true;
+ e.innerHTML = '<i class="fa fa-pause-circle fa-5x"></i>';
+ }
+ function av() {
+ n.pause();
+ l = false;
+ e.innerHTML = '<i class="fa fa-play-circle fa-5x"></i>';
+ }
+ function ct(x) {
+ if (x === 'next') {
+ if (k < o.length - 1)
+ k += 1;
+ else
+ k = 0;
+36
+ } else if (x === 'prev') {
+ if (k > 0)
+ k -= 1;
+ else
+ k = o.length - 1;
+ }
+ aq(n);
+ if (l) au();
+ }
+ function st() {
+ let p = n.duration * (h.value / 100);
+ n.currentTime = p;
+ }
+ function as() {
+ let q = 0;
+ if (!isNaN(n.duration)) {
+ q = n.currentTime * (100 / n.duration);
+ i.textContent = at(n.currentTime);
+ j.textContent = at(n.duration);
+ h.value = q;
+ }
+ if (n.ended) {
+ ct('next');
+ }
+ }
+ function at(r) {
+ let s = Math.floor((r / 60));
+ let t = Math.floor((r % 60));
+ return ("0" + s).slice(-2) + ":" + ("0" + t).slice(-2);
+ }
+ aq(n);
+ </script>
+</body>
+</html>

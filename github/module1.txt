@@ -1,0 +1,28 @@
+import cv2
+import mediapipe as mp
+import time
+hand = cv2.VideoCapture(0)
+uhands = mp.solutions.hands
+hands = uhands.Hands()
+drawing = mp.solutions.drawing_utils
+prevtime = 0
+currtime = 0
+while True:
+ success, image = hand.read()
+ newimg = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+ result = hands.process(newimg)
+ if result.multi_hand_landmarks:
+ for handLms in result.multi_hand_landmarks:
+ for i, pix in enumerate(handLms.landmark):
+ print(id, pix)
+ h, w, c = image.shape
+ cx, cy = int(pix.x * w), int(pix.y * h)
+ print(id, cx, cy)
+ cv2.circle(image, (cx, cy), 15, (255, 0, 255), cv2.FILLED)
+ drawing.draw_landmarks(image, handLms, uhands.HAND_CONNECTIONS)
+ currtime = time.time()
+ frps = 1 / (currtime - prevtime)
+ prevtime = currtime
+ cv2.putText(image, str(int(frps)), (10, 70), cv2.FONT_HERSHEY_DUPLEX, 3,(255, 0, 255), 3)
+ cv2.imshow("Image", image)
+ cv2.waitKey(100)

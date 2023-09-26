@@ -1,0 +1,86 @@
+
+import cv2
+import math
+import time
+import mediapipe as mh
+class handDetector():
+ def __init__(self, mode=False, maxHands=2, detectionConf=0.5, trackConf=0.5):
+ self.tipIds = [4, 8, 12, 16, 20]
+ self.mode = mode
+ self.mpHands = mh.solutions.hands
+ self.trackConf = trackConf
+ self.maxHands = maxHands
+ self.detectionConf = detectionConf
+ self.hands = self.mpHands.Hands(self.mode, self.maxHands, self.detectionConf, self.trackConf)
+ self.mpDraw = mh.solutions.drawing_utils
+ def find_Hands(self, img, draw=True):
+ imgeRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+ self.results = self.hands.process(imgeRGB)
+ if self.results.multi_hand_landmarks:
+ for handLms in self.results.multi_hand_landmarks:
+ if draw:
+ self.mpDraw.draw_landmarks(img, handLms, self.mpHands.HAND_CONNECTIONS)
+ return img
+ def fingers_Upin(self):
+ fingerscnt = []
+ if self.lmcList[self.tipIds[0]][1] > self.lmcList[self.tipIds[0] - 1][1]:
+ fingerscnt.append(1)
+ else:
+ fingerscnt.append(0)
+ for ids in range(1, 5):
+ if self.lmcList[self.tipIds[ids]][2] < self.lmcList[self.tipIds[ids] - 2][2]:
+ fingerscnt.append(1)
+ else:
+ fingerscnt.append(0)
+ return fingerscnt
+ def find_Position(self, img, handNo=0, draw=True):
+ aList = []
+ bbox = []
+ bList = []
+ self.lmkList = []
+ if self.results.multi_hand_landmarks:
+ myHand = self.results.multi_hand_landmarks[handNo]
+ for id, lm in enumerate(myHand.landmark):
+ hi, wi, ci = img.shape
+ zx, zy = int(lm.x * wi), int(lm.y * hi)
+ aList.append(zx)
+ bList.append(zy)
+ self.lmkList.append([id, zx, zy])
+ if draw:
+ cv2.circle(img, (zx, zy), 5, (255, 0, 255), cv2.FILLED)
+ xmin, xmax = min(aList), max(aList)
+ ymin, ymax = min(bList), max(bList)
+ bbox = xmin, ymin, xmax, ymax
+ if draw:
+ cv2.rectangle(img, (bbox[0] - 20, bbox[1] - 20),
+ (bbox[2] + 20, bbox[3] + 20), (0, 255, 0), 2)
+ return self.lmkList, bbox
+ def find_Distancek(self, p1, p2, imageo, draw=True):
+ h1, i1 = self.lmfList[p1][1], self.lmfList[p1][2]
+ h2, i2 = self.lmfList[p2][1], self.lmfList[p2][2]
+ fx, fy = (h1 + h2) // 2, (i1 + i2) // 2
+ if draw:
+ cv2.circle(imageo, (h1, i1), 15, (255, 0, 255), cv2.FILLED)
+ cv2.circle(imageo, (h2, i2), 15, (255, 0, 255), cv2.FILLED)
+ cv2.line(imageo, (h1, i1), (h2, i2), (255, 0, 255), 3)
+ cv2.circle(imageo, (fx, fy), 15, (255, 0, 255), cv2.FILLED)
+ lengthc = math.hypot(h2 - h1, i2 - i1)
+ return lengthc, imageo, [h1, i1, h2, i2, fx, fy]
+def main():
+ capt = cv2.VideoCapture(0)
+ prevstime = 0
+ detectors = handDetector()
+ while True:
+ success, img = capt.read()
+ imgd = detectors.find_Hands(img)
+ lmslist, bbox = detectors.find_Position(img)
+ if len(lmslist) != 0:
+ print(lmslist[4])
+ currntime = time.time()
+ frps = 1 / (currntime - prevstime)
+ prevstime = currntime
+ cv2.putText(imgd, str(int(frps)), (10, 70), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 255), 3)
+ cv2.imshow("Image", img)
+ cv2.waitKey(1)
+if __name__ == "__main__":
+ main()

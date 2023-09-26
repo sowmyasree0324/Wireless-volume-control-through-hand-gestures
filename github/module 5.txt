@@ -1,0 +1,58 @@
+
+import cv2
+import time
+import numpy as nk
+import HandTrackingModule as htmp
+from ctypes import cast, POINTER
+from comtypes import CLSCTX_ALL
+from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+camer_width, camer_height = 640, 480
+capt = cv2.VideoCapture(0)
+capt.set(3, camer_width)
+capt.set(4, camer_height)
+previ_time = 0
+hand_detector = htmp.handDetector(detectionCon=0.7, maxHands=1)
+speakers = AudioUtilities.GetSpeakers()
+hand_area = 0
+inter_face = speakers.Activate(
+ IAudioEndpointVolume.iid, CLSCTX_ALL, None)
+vol = cast(inter_face, POINTER(IAudioEndpointVolume))
+vol_bar_pos= 380
+vol_range = volume.GetVolumeRange()
+minimum_vol = vol_range[0]
+maximum_vol = vol_range[1]
+curr_volume = 0
+vol_color = (255, 0, 0)
+vol_prcntg = 0
+while True:
+ success, img = capt.read()
+ image = hand_detector.findHands(img)
+ landmk_list, bounding_boxi = hand_detector.findPosition(img, draw=True)
+ if len(landmk_list) != 0:
+ hand_area = (bounding_boxi[2] - bounding_boxi[0]) * (bounding_boxi[3] - bounding_boxi[1]) // 
+100
+ if 250 < hand_area < 1000:
+ finger_len, img, line_info = hand_detector.findDistance(4, 8, img)
+ vol_bar_pos = nk.interp(finger_len, [49, 201], [400, 150])
+ vol_prcntg = nk.interp(finger_len, [49, 201], [0, 100])
+ smooth_factor = 10
+ vol_prcntg = smooth_factor * round(vol_prcntg / smooth_factor)
+ finger_up = hand_detector.fingersUp()
+ if not finger_up[4]:
+ vol.SetMasterVolumeLevelScalar(vol_prcntg / 100, None)
+ cv2.circle(img, (line_info[4], line_info[5]), 15, (0, 255, 0), cv2.FILLED)
+ vol_color = (0, 255, 0)
+ else:
+ vol_color = (255, 0, 0)
+ cv2.rectangle(img, (50, 150), (85, 400), (255, 0, 0), 3)
+ cv2.rectangle(img, (50, int(vol_bar_pos)), (85, 400), (255, 0, 0), cv2.FILLED)
+ cv2.putText(img, f'{int(vol_prcntg)} %', (40, 450), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 0), 3)
+ curr_volume_level = int(vol.GetMasterVolumeLevelScalar() * 100)
+ cv2.putText(img, f'Volume Set: {int(curr_volume_level)}', (400, 50), cv2.FONT_HERSHEY_PLAIN,
+ 1, vol_color, 3)
+ curr_time = time.time()
+ frps = 1 / (curr_time - previ_time)
+ previ_time = curr_time
+ cv2.putText(image, f'FPS: {int(frps)}', (40, 50), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 0), 2)
+ cv2.imshow("Image", img)
+ cv2.waitKey(1)

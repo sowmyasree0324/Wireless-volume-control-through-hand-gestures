@@ -1,0 +1,52 @@
+import mediapipe as mh
+import cv2
+import time
+class handDetector():
+ def __init__(self, mode=False, maxHands=2, detectionConf=0.5, trackConf=0.5):
+ self.mode = mode
+ self.maxHands = maxHands
+ self.detectionConf = detectionConf
+ self.trackConf = trackConf
+ self.mpHands = mh.solutions.hands
+ self.hands = self.mpHands.Hands(self.mode, self.maxHands, self.detectionConf, self.trackConf)
+ self.mpDraw = mh.solutions.drawing_utils
+ def findHands(self, img, draw=True):
+ imgofRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+ self.results = self.hands.process(imgofRGB)
+ if self.results.multi_hand_landmarks:
+ for handLms in self.results.multi_hand_landmarks:
+ if draw:
+ self.mpDraw.draw_landmarks(img, handLms,
+ self.mpHands.HAND_CONNECTIONS)
+ return img
+ def findPosition(self, imge, handNo=0, draw=True):
+ lmkList = []
+ if self.results.multi_hand_landmarks:
+ myHand = self.results.multi_hand_landmarks[handNo]
+ for id, lms in enumerate(myHand.landmark):
+ hi, wi, ci = imge.shape
+ cx, cy = int(lms.x * wi), int(lms.y * hi)
+ lmkList.append([id, cx, cy])
+ if draw:
+ cv2.circle(imge, (cx, cy), 20, (253, 0, 253), cv2.FILLED)
+ return lmkList
+def main():
+ previtime = 0
+ currntime = 0
+ cap = cv2.VideoCapture(0)
+ detector = handDetector()
+ while True:
+ success, imge = cap.read()
+ imge = detector.findHands(imge)
+ lmkList = detector.findPosition(imge)
+ if len(lmkList) != 0:
+ print(lmkList[4])
+ currntime = time.time()
+ frps = 1 / (currntime - previtime)
+ previtime = currntime
+ cv2.putText(imge, str(int(frps)), (30, 70), cv2.FONT_HERSHEY_PLAIN, 3,
+ (253, 0, 253), 3)
+ cv2.imshow("Image", imge)
+ cv2.waitKey(1)
+if __name__ == "__main__":
+ main()
